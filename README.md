@@ -10,4 +10,6 @@ To replicate results:
 
 4. Finally, run makefinalfigures to create any figures that are desired.
 
+5. To recreate the datasets saved in finalarrays.mat, run the script downloadreadandqcdata.
+
 Please contact Colin Raymond (cr2630@columbia.edu) with any questions or to report any bugs.
