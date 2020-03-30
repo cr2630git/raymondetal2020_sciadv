@@ -1,19 +1,25 @@
-%Master script and extra analysis that did not directly contribute to one
-    %of the final figures
+%Master script for Raymond, Matthews, & Horton 2020, Science Advances
 
-%Loops to run
-reloaddata=0; %15 min total
-    barebones=0; %if =1, reload only the absolutely necessary arrays (5 min)
-addlqc=0; %5 min per stn -- after each round of this, finalwbtarray needs to be reloaded from finalwbtarrayfinal.mat
+%Also contains extra analysis that did not directly contribute to one
+    %of the final figures
+%Note that wet-bulb temperature is variously referred to throughout as 'TW' or 'WBT'
+
+%Essential (do on start-up)
+startuptasks=0; %5 min -- necessary only on start-up
+    reloading=1; %whether reloading from arrays or calculating brand-new
 getstnstats=0; %45 sec -- necessary only on start-up
+getstns35c33c31c=0; %15 sec; do on start-up
+annualtrends=0; %20 sec; do on start-up
+
+%Other
+findstnwithinlatlon=0;
 missingdataanalysis=0; %10 sec
 getstnlistextremesbyregion=0; %30 sec
     regforextremes='midwestus'; %'easterneurope', 'westerneurope','southasia', 'midwestus'
-mapstns35c=0; %3 min
-mapallstnshighestwbt=0; %25 min
-mappersiangulfstnshighestwbt=0; %3 min
+mapstns35c=0; %4 hr
+mapallstnshighesttw=0; %25 min
+mappersiangulfstnshighesttw=0; %3 min
 mapstnsbynumberofexceedances=0; %10 min
-annualtrends=0; %5 sec
 seasonalregionalpattern=0; %10 sec
     choose33or35=33;
 subdailyneighboringcombo=0; %10 sec per subplot for the first 4, 1 min per subplot for the next 4 (5 min total)
@@ -21,140 +27,181 @@ calcpct999=0; %1 min
 calcalltimemaxoisst=0; %10 min
 maperainterimhighestobs=0; %2 min
 counteragridptsabovethreshs=0; %2 min
+computerhofoccurrences=0;
+randomtroubleshooting=0;
    
 
-yeartostartat=1979; %Jan 1, 1979 corresponds to day 17533
-prevyear=1978;startday=17533;
-yeartostopat=2017; %Dec 31, 2017 is day 31777
-stopday=31777;
+%Other settings
+yeartostartat=1979;yeartostopat=2017;
+prevyear=1978;
+startday=17533;stopday=31777;
+years=1979:2017;
 
 numyears=yeartostopat-yeartostartat+1;
+mends=[31;59;90;120;151;181;212;243;273;304;334;365];
+
+slp=1013; %mb
+
+cd('/Volumes/ExternalDriveC/RaymondMatthewsHorton2020_Github/Scripts_final');
 
 
 %Station & date selections for certain specific plots
 %These can either be a single day or a vector of days, but always a single station
+if startuptasks==1
+    rawdatadir='/Volumes/ExternalDriveC/HadISD_Incl_2017/';
+    datadir='/Volumes/ExternalDriveC/RaymondMatthewsHorton2020_Github/Data/';
+    bigdatadir='/Volumes/ExternalDriveC/RaymondMatthewsHorton2020_Github/Data_inclbigfiles/';
+    erainterimdir='/Volumes/ExternalDriveD/ERA-Interim_6-hourly_data/';
+    figloc='/Volumes/ExternalDriveC/RaymondMatthewsHorton2020_Github/';
+    addpath(genpath('/Volumes/ExternalDriveC/RaymondMatthewsHorton2020_Github'));
+    addpath('~/iclouddrive/General_Academics/Research/GeneralPurposeScripts/nctoolbox-1.1.0/');setup_nctoolbox;
 
-
-datadir='/Volumes/ExternalDriveC/RaymondMatthewsHorton2019_Github/Data/';
-erainterimdir='/Volumes/ExternalDriveD/ERA-Interim_6-hourly_data/';
-figloc='/Volumes/ExternalDriveC/RaymondMatthewsHorton2019_Github/';
-addpath(genpath('/Volumes/ExternalDriveC/RaymondMatthewsHorton2019_Github'));
-
-[stncodes,stnnames,stnlats,stnlons,stnelevs,stnstarts,stnends]=...
-        textread('hadisd_station_metadata_v2016.txt','%12c %30c %7f %8f %6f %10s %10s');
-curnumstns=size(stncodes,1);
-exist figc;if ans==0;figc=1;end
-%Set names and time zones for selected stations
-finalstntzs=NaN.*ones(curnumstns,1);
-finalstntzs(3422)=3;finalstntzs(3492)=4.5;finalstntzs(3510)=3;finalstntzs(3511)=3;
-finalstntzs(3512)=3;finalstntzs(3521)=4;finalstntzs(3526)=4;finalstntzs(3547)=5;
-finalstntzs(3549)=5;finalstntzs(3552)=5;finalstntzs(4784)=2;
-finalstntzs(6127)=-5;finalstntzs(6271)=-5;finalstntzs(6275)=-5;
-finalstntzs(6524)=-8;finalstntzs(6526)=-8;finalstntzs(6530)=-8;
-finalstntzs(6531)=-6;finalstntzs(6555)=-5;finalstntzs(6566)=-5;finalstntzs(6574)=-5;
-finalstntzs(6598)=-5;
-finalstntzs(7191)=9.5;
-finalstntzs(7212)=8;
-finalstntzs(7216)=8;finalstntzs(7219)=8;
-finalstntzs(7246)=8;
-
-    
-%Reload arrays
-if reloaddata==1
-    temp=load(strcat(datadir,'finaltarrayfinal19312017.mat'));
-    finaltarray=temp.finaltarrayverylatest;
-    finalstncodes=temp.finalstncodes;
-    finalstnlatlon=temp.finalstnlatlon;
-    temp=load(strcat(datadir,'finaldewptarrayfinal19312017.mat'));
-    finaldewptarray=temp.finaldewptarrayverylatest;
-    temp=load(strcat(datadir,'finalwbtarrayfinaldj19312017.mat'));
-    finalwbtarraydj=temp.finalwbtarraydj;
-    temp=load(strcat(datadir,'finalelevarray.mat'));
-    finalstnelev=temp.finalstnelev;
-    temp=load(strcat(datadir,'wbtextremesarrays'));markersize=temp.markersize;
-    
-    
-    if barebones~=1
-        temp=load('/Volumes/ExternalDriveC/Basics_ERA-Interim/computeerainterimclimo.mat');
-        uclimo1000=temp.uclimo1000;vclimo1000=temp.vclimo1000;
-
-        temp=load(strcat(datadir,'stns33c35cdata'));
-        stns35catleast3xregions=temp.stns35catleast3xregions;
-        stns33catleast3xregions=temp.stns33catleast3xregions;
-        stns35catleast3xords=temp.stns35catleast3xords;
-        stns33catleast3xords=temp.stns33catleast3xords;
-        wbt33cinstances=temp.wbt33cinstances;
-        wbt35cinstances=temp.wbt35cinstances;
-
-        temp=load(strcat(datadir,'stns29c31cdata'));
-        stns31catleast3xords=temp.stns31catleast3xords;
-        stns29catleast3xords=temp.stns29catleast3xords;
-        wbt29cinstances=temp.wbt29cinstances;
-        wbt31cinstances=temp.wbt31cinstances;
-
-        temp1=-179.75:0.5:179.75;temp2=-90:0.5:90;
-        clear eralats;clear eralons;
-        for i=1:720
-            for j=1:361    
-                eralats(i,j)=temp2(j);
-                eralons(i,j)=temp1(i);
-            end
-        end
-        eralats=fliplr(eralats);
-        eralons=[eralons(361:720,:);eralons(1:360,:)];
+    if reloading==1
+        temp=load(strcat(datadir,'finalstnmetadata.mat'));
+        finalstnelev=temp.finalstnelev;
+        finalstnlatlon=temp.finalstnlatlon;
+        finalstnnames=temp.finalstnnames;
+        finalstncodes=temp.finalstncodes;
+        finalstnlist=temp.finalstnlist;
+        temp=load(strcat(datadir,'finalarrays.mat'));
+        twarray=temp.twarray;
+        tarray=temp.tarray;
+        tdarray=temp.tdarray;
+    else
+        [stncodes,stnnames,stnlats,stnlons,stnelev,stnstarts,stnends]=...
+            textread('hadisd_station_metadata_v2016.txt','%12c %30c %7f %8f %6f %10s %10s'); %for historical reasons, use this metadata file
+        stnlatlon=[stnlats stnlons];
+        %THESE TURN INTO 'FINAL' VERSIONS ONCE NORMALQC STEP0 IS RUN, IN THE DOWNLOADREADANDQCDATA SCRIPT
+        curnumstns=size(stncodes,1);
     end
+    exist figc;if ans==0;figc=1;end
+    exist finalstnnames;
+    if ans==0 && size(twarray,1)==4576 %replace default stn names with nice standardized ones
+        finalstnnames{1699}='Dhahran, Saudi Arabia';finalstnnames{1700}='Al Hofuf, Saudi Arabia';
+        finalstnnames{1704}='Yanbu, Saudi Arabia';
+        finalstnnames{1742}='Bandar Abbas, Iran'; finalstnnames{1744}='Chabahar, Iran';finalstnnames{1745}='Jeddah, Saudi Arabia';
+        finalstnnames{1754}='Muharraq, Bahrain';finalstnnames{1756}='Ras Al-Khaimah, UAE';finalstnnames{1760}='Abu Dhabi (Intl), UAE';
+        finalstnnames{1762}='Sohar (Port), Oman';finalstnnames{1764}='Muscat (Port), Oman';
+        finalstnnames{1765}='Sur, Oman';
+        finalstnnames{1775}='Dera Ismail Khan, Pakistan';
+        finalstnnames{1780}='Jacobabad, Pakistan';finalstnnames{1782}='Nawabshah, Pakistan';finalstnnames{1783}='Jiwani, Pakistan';
+        finalstnnames{1792}='Hisar, India';finalstnnames{1802}='Gwalior, India';
+        finalstnnames{3909}='Ciudad Obregon, Mexico';finalstnnames{3911}='Empalme, Mexico';finalstnnames{3913}='Loreto, Mexico';
+        finalstnnames{3914}='Choix, Mexico';finalstnnames{3922}='La Paz, Mexico';
+        finalstnnames{3929}='Soto la Marina, Mexico';finalstnnames{3940}='Tuxpan, Mexico';finalstnnames{3956}='Villahermosa, Mexico';
+        finalstnnames{4038}='Maracaibo, Venezuela';
+        finalstnnames{4355}='Port Hedland, Australia';finalstnnames{4357}='Yannarie, Australia';
+    end
+
+    temp1=-179.75:0.5:179.75;temp2=-90:0.5:90;
+    clear eralats;clear eralons;
+    for i=1:720
+        for j=1:361    
+            eralats(i,j)=temp2(j);
+            eralons(i,j)=temp1(i);
+        end
+    end
+    eralats=fliplr(eralats);
+    eralons=[eralons(361:720,:);eralons(1:360,:)];
 end
 
-%Additional QC
-if addlqc==1
-    doaddlqc;
-end
 
 %Some basic stn stats
 if getstnstats==1
     thisyear=prevyear;
-    for day=startday:size(finalwbtarraydj,2)
-        if finalwbtarraydj(1,day,2)==1 %Jan 1 of a year
+    for day=startday:size(twarray,2)
+        if twarray(1,day,2)==1 %Jan 1 of a year
             thisyear=thisyear+1;
             if rem(thisyear,4)==0;thisyearlen=366;else;thisyearlen=365;end
-            for stn=1:7877
-                wbtmaxnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(finalwbtarraydj(stn,day:day+thisyearlen-1,3)));
-                tmaxnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(finaltarray(stn,day:day+thisyearlen-1,3)));
-                wbtminnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(finalwbtarraydj(stn,day:day+thisyearlen-1,4)));
-                tminnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(finaltarray(stn,day:day+thisyearlen-1,4)));
+            for stn=1:size(twarray,1)
+                wbtmaxnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(twarray(stn,day:day+thisyearlen-1,3)));
+                tmaxnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(tarray(stn,day:day+thisyearlen-1,3)));
+                wbtminnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(twarray(stn,day:day+thisyearlen-1,4)));
+                tminnumnansbyyearandstn(thisyear-prevyear,stn)=sum(isnan(tarray(stn,day:day+thisyearlen-1,4)));
             end
         end
     end
     
-    stnarraygoodwbtmax=zeros(curnumstns,numyears);stnlistgoodwbtmax=zeros(curnumstns,1);
-    stnarraygoodtmax=zeros(curnumstns,numyears);stnlistgoodtmax=zeros(curnumstns,1);
-    stnarraygoodwbtmin=zeros(curnumstns,numyears);stnlistgoodwbtmin=zeros(curnumstns,1);
-    stnarraygoodtmin=zeros(curnumstns,numyears);stnlistgoodtmin=zeros(curnumstns,1);
-    for stn=1:curnumstns
-        for year=1:numyears
-            if wbtmaxnumnansbyyearandstn(year,stn)<=0.1*365;stnarraygoodwbtmax(stn,year)=1;end
-            if tmaxnumnansbyyearandstn(year,stn)<=0.1*365;stnarraygoodtmax(stn,year)=1;end
-            if wbtminnumnansbyyearandstn(year,stn)<=0.1*365;stnarraygoodwbtmin(stn,year)=1;end
-            if tminnumnansbyyearandstn(year,stn)<=0.1*365;stnarraygoodtmin(stn,year)=1;end
-        end
-        
-        if sum(stnarraygoodwbtmax(stn,:))>=0.9*numyears;stnlistgoodwbtmax(stn)=1;end
-        if sum(stnarraygoodtmax(stn,:))>=0.9*numyears;stnlistgoodtmax(stn)=1;end
-        if sum(stnarraygoodwbtmin(stn,:))>=0.9*numyears;stnlistgoodwbtmin(stn)=1;end
-        if sum(stnarraygoodtmin(stn,:))>=0.9*numyears;stnlistgoodtmin(stn)=1;end
-    end
-    
     
     %Long-term averages by stn
-    for stn=1:curnumstns
-        wbtltabystn(stn)=nanmean(finalwbtarraydj(stn,:,3));
-        tltabystn(stn)=nanmean(finaltarray(stn,:,3));
+    for stn=1:size(twarray,1)
+        wbtltabystn(stn)=nanmean(twarray(stn,:,3));
+        tltabystn(stn)=nanmean(tarray(stn,:,3));
+    end
+    
+    %Stn time zones based only on longitude
+    for i=1:size(twarray,1)
+        if finalstnlatlon(i,2)<=-172.5
+            stntzs(i)=-12;
+        elseif finalstnlatlon(i,2)<=-157.5
+            stntzs(i)=-11;
+       elseif finalstnlatlon(i,2)<=-142.5
+            stntzs(i)=-10;
+       elseif finalstnlatlon(i,2)<=-127.5
+            stntzs(i)=-9;
+       elseif finalstnlatlon(i,2)<=-112.5
+            stntzs(i)=-8;
+       elseif finalstnlatlon(i,2)<=-97.5
+            stntzs(i)=-7;
+       elseif finalstnlatlon(i,2)<=-82.5
+            stntzs(i)=-6;
+       elseif finalstnlatlon(i,2)<=-67.5
+            stntzs(i)=-5;
+       elseif finalstnlatlon(i,2)<=-52.5
+            stntzs(i)=-4;
+       elseif finalstnlatlon(i,2)<=-37.5
+            stntzs(i)=-3;
+       elseif finalstnlatlon(i,2)<=-22.5
+            stntzs(i)=-2;
+       elseif finalstnlatlon(i,2)<=-7.5
+            stntzs(i)=-1;
+       elseif finalstnlatlon(i,2)<=7.5
+            stntzs(i)=0;
+       elseif finalstnlatlon(i,2)<=22.5
+            stntzs(i)=1;
+       elseif finalstnlatlon(i,2)<=37.5
+            stntzs(i)=2;
+       elseif finalstnlatlon(i,2)<=52.5
+            stntzs(i)=3;
+       elseif finalstnlatlon(i,2)<=67.5
+            stntzs(i)=4;
+       elseif finalstnlatlon(i,2)<=82.5
+            stntzs(i)=5;
+       elseif finalstnlatlon(i,2)<=97.5
+            stntzs(i)=6;
+       elseif finalstnlatlon(i,2)<=112.5
+            stntzs(i)=7;
+       elseif finalstnlatlon(i,2)<=127.5
+            stntzs(i)=8;
+       elseif finalstnlatlon(i,2)<=142.5
+            stntzs(i)=9;
+       elseif finalstnlatlon(i,2)<=157.5
+            stntzs(i)=10;
+       elseif finalstnlatlon(i,2)<=172.5
+            stntzs(i)=11;
+        elseif ~isnan(finalstnlatlon(i,2))
+            stntzs(i)=12;
+        else
+            stntzs(i)=NaN;
+       end
+    end
+end
+
+
+if findstnwithinlatlon==1
+    clear resultstns;resultc=0;
+    for i=1:size(twarray,1)
+        if finalstnlatlon(i,1)>=25 && finalstnlatlon(i,1)<=31 && finalstnlatlon(i,2)>=62 && finalstnlatlon(i,2)<=74
+            disp(i);
+            resultc=resultc+1;
+            resultstns(resultc)=i;
+        end
     end
 end
 
 
 %Invalid/missing data by stn and year, to see if there are systematic 
-    %problems that might be biasing the results AMONG STNS THAT HAVE ALREADY PASSED THE 90% THRESHOLD
+    %problems that might be biasing the results
 if missingdataanalysis==1
     nummissingarray=zeros(6,5);numpresentarray=zeros(6,5);
     %We are interested in the % of data missing by decade, for each of these bins
@@ -210,7 +257,7 @@ if missingdataanalysis==1
 end
 
 
-%Get list of stations that have purportedly hit various WBT thresholds in a
+%Get list of stations that have reached various TW thresholds in a
 %given region and year (e.g. Western Europe 2003, Russia 2010)
 if getstnlistextremesbyregion==1
     numstnsfound=0;
@@ -239,8 +286,8 @@ if getstnlistextremesbyregion==1
     end
     clear thislist;
     for stn=1:curnumstns
-        if finalstnlatlon(stn,1)>=southlat && finalstnlatlon(stn,1)<=northlat &&...
-                finalstnlatlon(stn,2)>=westlon && finalstnlatlon(stn,2)<=eastlon
+        if stnlatlon(stn,1)>=southlat && stnlatlon(stn,1)<=northlat &&...
+                stnlatlon(stn,2)>=westlon && stnlatlon(stn,2)<=eastlon
             numstnsfound=numstnsfound+1;
             thislist(numstnsfound)=stn;
         end
@@ -257,8 +304,8 @@ if getstnlistextremesbyregion==1
                 wbt30cstns(num30cstnsfound)=thisstn;
                 wbt30cinstances(total30cinstancesfound,1)=thisstn;
                 wbt30cinstances(total30cinstancesfound,2)=day;
-                wbt30cinstances(total30cinstancesfound,3)=finalstnlatlon(thisstn,1);
-                wbt30cinstances(total30cinstancesfound,4)=finalstnlatlon(thisstn,2);
+                wbt30cinstances(total30cinstancesfound,3)=stnlatlon(thisstn,1);
+                wbt30cinstances(total30cinstancesfound,4)=stnlatlon(thisstn,2);
                 wbt30cinstances(total30cinstancesfound,5)=finalwbtarraydj(thisstn,day,1);
                 wbt30cinstances(total30cinstancesfound,6)=finalwbtarraydj(thisstn,day,2);
                 wbt30cinstances(total30cinstancesfound,7)=finalwbtarraydj(thisstn,day,3);
@@ -279,8 +326,8 @@ if getstnlistextremesbyregion==1
                 wbt28cstns(num28cstnsfound)=thisstn;
                 wbt28cinstances(total28cinstancesfound,1)=thisstn;
                 wbt28cinstances(total28cinstancesfound,2)=day;
-                wbt28cinstances(total28cinstancesfound,3)=finalstnlatlon(thisstn,1);
-                wbt28cinstances(total28cinstancesfound,4)=finalstnlatlon(thisstn,2);
+                wbt28cinstances(total28cinstancesfound,3)=stnlatlon(thisstn,1);
+                wbt28cinstances(total28cinstancesfound,4)=stnlatlon(thisstn,2);
                 wbt28cinstances(total28cinstancesfound,5)=finalwbtarraydj(thisstn,day,1);
                 wbt28cinstances(total28cinstancesfound,6)=finalwbtarraydj(thisstn,day,2);
                 wbt28cinstances(total28cinstancesfound,7)=finalwbtarraydj(thisstn,day,3);
@@ -301,8 +348,8 @@ if getstnlistextremesbyregion==1
         if ~isnan(nanmax(squeeze(finalwbtarraydj(thisstn,firstday:lastday,3))))
             validstnc=validstnc+1;
             [maxwbtthisyearbystn(validstnc),dayofhw(validstnc)]=nanmax(squeeze(finalwbtarraydj(thisstn,firstday:lastday,3)));
-            latstoplot(validstnc)=finalstnlatlon(thisstn,1);
-            lonstoplot(validstnc)=finalstnlatlon(thisstn,2);
+            latstoplot(validstnc)=stnlatlon(thisstn,1);
+            lonstoplot(validstnc)=stnlatlon(thisstn,2);
         end
     end
     colorcutoffs=[20;22;24;26;28;30;32];
@@ -316,75 +363,15 @@ if getstnlistextremesbyregion==1
     curpart=2;highqualityfiguresetup;
 end
 
-%Make map of stations that have ever purportedly hit 27 C or higher, 29 C or higher, 31 C or higher, 33 C or higher, and 35 C or higher
-%Also save the corresponding dates
-if mapstns35c==1
-    num27cstnsfound=0;total27cinstancesfound=0;
-    num29cstnsfound=0;total29cinstancesfound=0;
-    num31cstnsfound=0;total31cinstancesfound=0;
-    num33cstnsfound=0;total33cinstancesfound=0;
+
+%Statistics for exceedances of the top 3 thresholds discussed in the paper
+if getstns35c33c31c==1
     num35cstnsfound=0;total35cinstancesfound=0;
-    clear wbt27cstns;clear wbt27cinstances;
-    clear wbt29cstns;clear wbt29cinstances;
-    clear wbt31cstns;clear wbt31cinstances;
-    clear wbt33cstns;clear wbt33cinstances;
     clear wbt35cstns;clear wbt35cinstances;
-    for stn=1:curnumstns
-        thisstnhashit27c=0;thisstnhashit29c=0;thisstnhashit31c=0;thisstnhashit33c=0;thisstnhashit35c=0;
-        for day=startday:size(finalwbtarraydj,2)
-            if finalwbtarraydj(stn,day,3)>=27
-                if thisstnhashit27c==0;num27cstnsfound=num27cstnsfound+1;thisstnhashit27c=1;end
-                total27cinstancesfound=total27cinstancesfound+1;
-                wbt27cstns(num27cstnsfound)=stn;
-                wbt27cinstances(total27cinstancesfound,1)=stn;
-                wbt27cinstances(total27cinstancesfound,2)=day;
-                wbt27cinstances(total27cinstancesfound,3)=finalstnlatlon(stn,1);
-                wbt27cinstances(total27cinstancesfound,4)=finalstnlatlon(stn,2);
-                wbt27cinstances(total27cinstancesfound,5)=finalwbtarraydj(stn,day,1);
-                wbt27cinstances(total27cinstancesfound,6)=finalwbtarraydj(stn,day,2);
-                wbt27cinstances(total27cinstancesfound,7)=finalwbtarraydj(stn,day,3);
-            end
-            
-            if finalwbtarraydj(stn,day,3)>=29
-                if thisstnhashit29c==0;num29cstnsfound=num29cstnsfound+1;thisstnhashit29c=1;end
-                total29cinstancesfound=total29cinstancesfound+1;
-                wbt29cstns(num29cstnsfound)=stn;
-                wbt29cinstances(total29cinstancesfound,1)=stn;
-                wbt29cinstances(total29cinstancesfound,2)=day;
-                wbt29cinstances(total29cinstancesfound,3)=finalstnlatlon(stn,1);
-                wbt29cinstances(total29cinstancesfound,4)=finalstnlatlon(stn,2);
-                wbt29cinstances(total29cinstancesfound,5)=finalwbtarraydj(stn,day,1);
-                wbt29cinstances(total29cinstancesfound,6)=finalwbtarraydj(stn,day,2);
-                wbt29cinstances(total29cinstancesfound,7)=finalwbtarraydj(stn,day,3);
-            end
-            
-            if finalwbtarraydj(stn,day,3)>=31
-                if thisstnhashit31c==0;num31cstnsfound=num31cstnsfound+1;thisstnhashit31c=1;end
-                total31cinstancesfound=total31cinstancesfound+1;
-                wbt31cstns(num31cstnsfound)=stn;
-                wbt31cinstances(total31cinstancesfound,1)=stn;
-                wbt31cinstances(total31cinstancesfound,2)=day;
-                wbt31cinstances(total31cinstancesfound,3)=finalstnlatlon(stn,1);
-                wbt31cinstances(total31cinstancesfound,4)=finalstnlatlon(stn,2);
-                wbt31cinstances(total31cinstancesfound,5)=finalwbtarraydj(stn,day,1);
-                wbt31cinstances(total31cinstancesfound,6)=finalwbtarraydj(stn,day,2);
-                wbt31cinstances(total31cinstancesfound,7)=finalwbtarraydj(stn,day,3);
-            end
-            
-            if finalwbtarraydj(stn,day,3)>=33
-                if thisstnhashit33c==0;num33cstnsfound=num33cstnsfound+1;thisstnhashit33c=1;end
-                total33cinstancesfound=total33cinstancesfound+1;
-                wbt33cstns(num33cstnsfound)=stn;
-                wbt33cinstances(total33cinstancesfound,1)=stn;
-                wbt33cinstances(total33cinstancesfound,2)=day;
-                wbt33cinstances(total33cinstancesfound,3)=finalstnlatlon(stn,1);
-                wbt33cinstances(total33cinstancesfound,4)=finalstnlatlon(stn,2);
-                wbt33cinstances(total33cinstancesfound,5)=finalwbtarraydj(stn,day,1);
-                wbt33cinstances(total33cinstancesfound,6)=finalwbtarraydj(stn,day,2);
-                wbt33cinstances(total33cinstancesfound,7)=finalwbtarraydj(stn,day,3);
-            end
-            
-            if finalwbtarraydj(stn,day,3)>=35
+    for stn=1:size(twarray,1)
+        thisstnhashit35c=0;
+        for day=startday:stopday
+            if twarray(stn,day,3)>=35
                 if thisstnhashit35c==0;num35cstnsfound=num35cstnsfound+1;thisstnhashit35c=1;end
                 total35cinstancesfound=total35cinstancesfound+1;
                 wbt35cstns(num35cstnsfound)=stn;
@@ -392,14 +379,93 @@ if mapstns35c==1
                 wbt35cinstances(total35cinstancesfound,2)=day;
                 wbt35cinstances(total35cinstancesfound,3)=finalstnlatlon(stn,1);
                 wbt35cinstances(total35cinstancesfound,4)=finalstnlatlon(stn,2);
-                wbt35cinstances(total35cinstancesfound,5)=finalwbtarraydj(stn,day,1);
-                wbt35cinstances(total35cinstancesfound,6)=finalwbtarraydj(stn,day,2);
-                wbt35cinstances(total35cinstancesfound,7)=finalwbtarraydj(stn,day,3);
+                wbt35cinstances(total35cinstancesfound,5)=twarray(stn,day,1);
+                wbt35cinstances(total35cinstancesfound,6)=twarray(stn,day,2);
+                wbt35cinstances(total35cinstancesfound,7)=twarray(stn,day,3);
             end
         end
     end
+    
+    num33cstnsfound=0;total33cinstancesfound=0;
+    clear wbt33cstns;clear wbt33cinstances;
+    for stn=1:size(twarray,1)
+        thisstnhashit33c=0;
+        for day=startday:stopday
+            if twarray(stn,day,3)>=33
+                if thisstnhashit33c==0;num33cstnsfound=num33cstnsfound+1;thisstnhashit33c=1;end
+                total33cinstancesfound=total33cinstancesfound+1;
+                wbt33cstns(num33cstnsfound)=stn;
+                wbt33cinstances(total33cinstancesfound,1)=stn;
+                wbt33cinstances(total33cinstancesfound,2)=day;
+                wbt33cinstances(total33cinstancesfound,3)=finalstnlatlon(stn,1);
+                wbt33cinstances(total33cinstancesfound,4)=finalstnlatlon(stn,2);
+                wbt33cinstances(total33cinstancesfound,5)=twarray(stn,day,1);
+                wbt33cinstances(total33cinstancesfound,6)=twarray(stn,day,2);
+                wbt33cinstances(total33cinstancesfound,7)=twarray(stn,day,3);
+            end
+        end
+    end
+    
+    clear stns33catleast5xords;numstnsfound=0;thisstnfound=0;
+    for i=5:size(wbt33cinstances,1)
+        if wbt33cinstances(i,1)==wbt33cinstances(i-4,1) && thisstnfound==0 %at least 5 instances at this stn
+            numstnsfound=numstnsfound+1;thisstnfound=1;
+            stns33catleast5xords(numstnsfound,1)=wbt33cinstances(i,1);
+        elseif wbt33cinstances(i,1)~=wbt33cinstances(i-1,1)
+            thisstnfound=0;
+        end
+    end
+    
+    num31cstnsfound=0;total31cinstancesfound=0;
+    clear wbt31cstns;clear wbt31cinstances;
+    for stn=1:size(twarray,1)
+        thisstnhashit31c=0;
+        for day=startday:size(twarray,2)
+            if twarray(stn,day,3)>=31
+                if thisstnhashit31c==0;num31cstnsfound=num31cstnsfound+1;thisstnhashit31c=1;end
+                total31cinstancesfound=total31cinstancesfound+1;
+                wbt31cstns(num31cstnsfound)=stn;
+                wbt31cinstances(total31cinstancesfound,1)=stn;
+                wbt31cinstances(total31cinstancesfound,2)=day;
+                wbt31cinstances(total31cinstancesfound,3)=finalstnlatlon(stn,1);
+                wbt31cinstances(total31cinstancesfound,4)=finalstnlatlon(stn,2);
+                wbt31cinstances(total31cinstancesfound,5)=twarray(stn,day,1);
+                wbt31cinstances(total31cinstancesfound,6)=twarray(stn,day,2);
+                wbt31cinstances(total31cinstancesfound,7)=twarray(stn,day,3);
+            end
+        end
+    end
+    
+    dothis=0; %don't normally do this b/c it takes an extra minute
+    if dothis==1
+    num29cstnsfound=0;total29cinstancesfound=0;
+    clear wbt29cstns;clear wbt29cinstances;
+    for stn=1:size(twarray,1)
+        thisstnhashit29c=0;
+        for day=startday:size(twarray,2)
+            if twarray(stn,day,3)>=29
+                if thisstnhashit29c==0;num29cstnsfound=num29cstnsfound+1;thisstnhashit29c=1;end
+                total29cinstancesfound=total29cinstancesfound+1;
+                wbt29cstns(num29cstnsfound)=stn;
+                wbt29cinstances(total29cinstancesfound,1)=stn;
+                wbt29cinstances(total29cinstancesfound,2)=day;
+                wbt29cinstances(total29cinstancesfound,3)=finalstnlatlon(stn,1);
+                wbt29cinstances(total29cinstancesfound,4)=finalstnlatlon(stn,2);
+                wbt29cinstances(total29cinstancesfound,5)=twarray(stn,day,1);
+                wbt29cinstances(total29cinstancesfound,6)=twarray(stn,day,2);
+                wbt29cinstances(total29cinstancesfound,7)=twarray(stn,day,3);
+            end
+        end
+    end
+    end
+end
 
-    %List (and map) of the 30 stns that have purportedly hit 35 C or higher at least 3 times
+
+
+%Get and make map of stations that have ever purportedly hit 27 C or higher, 29 C or higher, 31 C or higher, 33 C or higher, and 35 C or higher
+%Also save the corresponding dates
+if mapstns35c==1
+    %List (and map) of the stns that have purportedly hit 35 C or higher at least 3 times
     %Also calculate stns that have hit 33 C or higher at least 3 times, for various later uses
     clear stns35catleast3xords;numstnsfound=0;thisstnfound=0;
     for i=3:size(wbt35cinstances,1)
@@ -407,6 +473,15 @@ if mapstns35c==1
             numstnsfound=numstnsfound+1;thisstnfound=1;
             stns35catleast3xords(numstnsfound,1)=wbt35cinstances(i,1);
         elseif wbt35cinstances(i,1)~=wbt35cinstances(i-1,1)
+            thisstnfound=0;
+        end
+    end
+    clear stns34catleast3xords;numstnsfound=0;thisstnfound=0;
+    for i=3:size(wbt34cinstances,1)
+        if wbt34cinstances(i,1)==wbt34cinstances(i-2,1) && thisstnfound==0 %at least 3 instances at this stn
+            numstnsfound=numstnsfound+1;thisstnfound=1;
+            stns34catleast3xords(numstnsfound,1)=wbt34cinstances(i,1);
+        elseif wbt34cinstances(i,1)~=wbt34cinstances(i-1,1)
             thisstnfound=0;
         end
     end
@@ -513,38 +588,38 @@ if mapstns35c==1
         thisstn=wbt35cinstancesfreqstns(i,1);
         thisday=wbt35cinstancesfreqstns(i,2);
         wbtsurr35cinstances(i,:)=finalwbtarraydj(thisstn,thisday-5:thisday+5,3);
-        tsurr35cinstances(i,:)=finaltarray(thisstn,thisday-5:thisday+5,3);
-        dewptsurr35cinstances(i,:)=finaldewptarray(thisstn,thisday-5:thisday+5,3);
+        tsurr35cinstances(i,:)=tarray(thisstn,thisday-5:thisday+5,3);
+        dewptsurr35cinstances(i,:)=tdarray(thisstn,thisday-5:thisday+5,3);
     end
 end
 
 
-%Map of all stations showing their highest WBT ever observed
-if mapallstnshighestwbt==1
+%Map of all stations showing their highest TW ever observed
+if mapallstnshighesttw==1
     temp=finalwbtarraydj(:,:,3);
-    highestwbtever=squeeze(nanmax(temp,[],2));
+    highesttwever=squeeze(nanmax(temp,[],2));
     
     colorcutoffs=[23;25;27;29;31;33;35];
     markercolors=[colors('black');colors('purple');colors('blue');colors('light blue');...
         colors('green');colors('light green');colors('orange');colors('red')];
-    quicklymapsomethingworld(highestwbtever,figc,finalstnlatlon(1:curnumstns,1),finalstnlatlon(1:curnumstns,2),...
+    quicklymapsomethingworld(highesttwever,figc,finalstnlatlon(1:curnumstns,1),finalstnlatlon(1:curnumstns,2),...
         's',colorcutoffs,markercolors,markersize',1,...
-        {'cblabeltext';'Daily Max WBT (C)';'cblabelfontsize';16},figloc,'highestwbtevermap');
+        {'cblabeltext';'Daily Max TW (C)';'cblabelfontsize';16},figloc,'highestwbtevermap');
     figure(figc);
-    title('Highest WBT Ever Observed','fontsize',20,'fontweight','bold','fontname','arial');
-    figname='highestwbtevermap';curpart=2;highqualityfiguresetup;
+    title('Highest TW Ever Observed','fontsize',20,'fontweight','bold','fontname','arial');
+    figname='highesttwevermap';curpart=2;highqualityfiguresetup;
 end
 
 
 %Map of Persian Gulf stations showing their highest WBT ever observed
-if mappersiangulfstnshighestwbt==1
+if mappersiangulfstnshighesttw==1
     temp=finalwbtarraydj(:,:,3);
-    highestwbtever=squeeze(nanmax(temp,[],2));
+    highesttwever=squeeze(nanmax(temp,[],2));
     
     colorcutoffs=[23;25;27;29;31;33];
     markercolors=[colors('black');colors('purple');colors('blue');colors('sky blue');...
         colors('medium-dark green');colors('light orange');colors('red')];
-    quicklymapsomethingregion('persian-gulf',highestwbtever,figc,finalstnlatlon(1:curnumstns,1),finalstnlatlon(1:curnumstns,2),...
+    quicklymapsomethingregion('persian-gulf',highesttwever,figc,finalstnlatlon(1:curnumstns,1),finalstnlatlon(1:curnumstns,2),...
         's',colorcutoffs,markercolors,10,1,...
         {'cblabeltext';strcat('Daily Max Tw (',char(176),'C)');'cblabelfontsize';16},figloc,'highestwbtevermap_pg');
     figure(figc);
@@ -591,96 +666,29 @@ end
 if annualtrends==1
     clear num35coccurrencesbyyear;clear num33coccurrencesbyyear;clear num31coccurrencesbyyear;
     clear num29coccurrencesbyyear;clear num27coccurrencesbyyear;
-    clear avgwbtbyyear;clear avgtbyyear;clear tmaxgoodstnsclimobyyear;
-    
-    %Do this only on the first run of a session (10 min)
-    dothis=0;
-    if dothis==1
-    goodstnc=0;
-    for stn=1:curnumstns
-        if stnlistgoodwbtmax(stn)==1
-            goodstnc=goodstnc+1;
-            finalwbtarraydjgoodstns(goodstnc,:,:)=finalwbtarraydj(stn,:,:);
-            stnlatsgoodstns(goodstnc)=stnlats(stn);
-            stnlonsgoodstns(goodstnc)=stnlons(stn);
-        end
-    end
-    end
-    exist finalwbtarraydjgoodstns;if ans==0;disp('Need to create finalwbtarraydjgoodstns');return;end
-    
-    thisyear=prevyear;
-    stnords=1:curnumstns;
+    clear avgtwbyyear;clear avgtbyyear;clear tmaxgoodstnsclimobyyear;
 
-    for day=startday:size(finalwbtarraydjgoodstns,2)
-        if finalwbtarraydjgoodstns(1,day,2)==1 %Jan 1 of a year
+    thisyear=1978;
+    for day=startday:stopday
+        if twarray(1,day,2)==1 %Jan 1 of a year
             thisyear=thisyear+1;
             if rem(thisyear,4)==0;thisyearlen=366;else;thisyearlen=365;end
-            num35coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=35));
-            num33coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=33));
-            num31coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=31));
-            num29coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=29));
-            num27coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=27));
-            num10coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(finalwbtarraydjgoodstns(:,day:day+thisyearlen-1,3)>=10));
-            
-            goodwbtmaxstnsthisyear=stnarraygoodwbtmax(:,thisyear-prevyear);
-            wbtmaxdataallstns=finalwbtarraydj(:,day:day+thisyearlen-1,3);
-            wbtmaxdatagoodstns=wbtmaxdataallstns(goodwbtmaxstnsthisyear==1,:);
-            wbtmaxgoodstnsclimobyyear(thisyear-prevyear)=nanmean(wbtltabystn(goodwbtmaxstnsthisyear==1));
-            
-            goodtmaxstnsthisyear=stnarraygoodtmax(:,thisyear-prevyear);
-            tmaxdataallstns=finaltarray(:,day:day+thisyearlen-1,3);
-            tmaxdatagoodstns=tmaxdataallstns(goodtmaxstnsthisyear==1,:);
-            tmaxgoodstnsclimobyyear(thisyear-prevyear)=nanmean(tltabystn(goodtmaxstnsthisyear==1));
-            
-            avgwbtmaxbyyear(thisyear-prevyear)=nanmean(nanmean(wbtmaxdatagoodstns));
-            avgtmaxbyyear(thisyear-prevyear)=nanmean(nanmean(tmaxdatagoodstns));
+            num35coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=35));
+            num33coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=33));
+            num31coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=31));
+            num29coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=29));
+            num27coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=27));
+            num10coccurrencesbyyear(thisyear-prevyear)=nansum(nansum(twarray(:,day:day+thisyearlen-1,3)>=10));
+            %fprintf('There are %d valid data points in this year\n',nansum(nansum(~isnan(twarray(:,day:day+thisyearlen-1,3)))));
         end
     end
-    %Adjust means by the composition of the stations that comprise them
-    overallwbtmaxmean=nanmean(wbtmaxgoodstnsclimobyyear);
-    necoffsetwbtmax=overallwbtmaxmean-wbtmaxgoodstnsclimobyyear;
-    avgwbtmaxbyyear=avgwbtmaxbyyear+necoffsetwbtmax;
-    
-    overalltmaxmean=nanmean(tmaxgoodstnsclimobyyear);
-    necoffsettmax=overalltmaxmean-tmaxgoodstnsclimobyyear;
-    avgtmaxbyyear=avgtmaxbyyear+necoffsettmax;
         
     
     figure(189);clf;curpart=1;highqualityfiguresetup;
-    oldversionofplot=0;
-    if oldversionofplot==1
-        subplot('Position',[0.09 0.3 0.76 0.65]);
-        semilogy(years,num27coccurrencesbyyear,'linewidth',2,'color','b');hold on;
-        semilogy(years,num29coccurrencesbyyear,'linewidth',2,'color',colors('light blue'));
-        semilogy(years,num31coccurrencesbyyear,'linewidth',2,'color','g');
-        semilogy(years,num33coccurrencesbyyear,'linewidth',2,'color',colors('orange'));
-        semilogy(years,num35coccurrencesbyyear,'linewidth',2,'color','r');
-        ylim([0 10^5]);
-        %symlog(gca,'y',0); %add 0 -- DO THIS MANUALLY AFTER THE PLOT HAS BEEN MADE
-
-        ylabel('Count','fontname','arial','fontsize',16,'fontweight','bold');
-        lgd1=legend({sprintf('27%cC',char(176)),sprintf('29%cC',char(176)),sprintf('31%cC',char(176)),sprintf('33%cC',char(176)),sprintf('35%cC',char(176))},...
-            'Location','EastOutside');set(lgd1,'Position',[0.92 0.5 0.06 0.25]);
-        xlim([yeartostartat yeartostopat]);
-        set(gca,'fontname','arial','fontsize',16,'fontweight','bold');
-
-        subplot('Position',[0.09 0.05 0.76 0.16]);
-        plot(years,avgwbtmaxbyyear,'linewidth',2,'color','k','linestyle','--');hold on;
-        ylabel(sprintf('WBT (%cC)',char(176)),'fontname','arial','fontsize',16,'fontweight','bold');ylim([10 12]);yticks([10 11 12]);
-        yyaxis right;plot(years,avgtmaxbyyear,'linewidth',2,'color',colors('gray'),'linestyle','--');set(gca,'YColor','k');
-        ylabel(sprintf('T (%cC)',char(176)),'fontname','arial','fontsize',16,'fontweight','bold');ylim([15 19]);
-        xlim([yeartostartat yeartostopat]);
-        lgd2=legend({'WBT','T'},'Location','NortheastOutside');set(lgd2,'Position',[0.92 0.08 0.06 0.1]);
-        set(gca,'fontname','arial','fontsize',16,'fontweight','bold');
-        xlabel('Year','fontname','arial','fontsize',16,'fontweight','bold');
-
-        height=12;
-    else
-        subplot(5,1,1);plot(years,num33coccurrencesbyyear,'linewidth',2,'color',colors('orange'));ylim([0 45]);
-        subplot(5,1,2);plot(years,num31coccurrencesbyyear,'linewidth',2,'color',colors('green'));ylim([0 450]);
-        subplot(5,1,3);plot(years,num29coccurrencesbyyear,'linewidth',2,'color',colors('light blue'));ylim([0 4500]);
-        subplot(5,1,4);plot(years,num27coccurrencesbyyear,'linewidth',2,'color',colors('dark blue'));ylim([0 45000]);
-    end
+    subplot(5,1,1);plot(years,num33coccurrencesbyyear,'linewidth',2,'color',colors('orange'));
+    subplot(5,1,2);plot(years,num31coccurrencesbyyear,'linewidth',2,'color',colors('green'));
+    subplot(5,1,3);plot(years,num29coccurrencesbyyear,'linewidth',2,'color',colors('light blue'));
+    subplot(5,1,4);plot(years,num27coccurrencesbyyear,'linewidth',2,'color',colors('dark blue'));
     figname='annualtrendsbythreshold';curpart=2;highqualityfiguresetup;
     
     %Get statistics on increases in each threshold, for reporting in paper
@@ -753,7 +761,7 @@ if seasonalregionalpattern==1
 end
 
 
-%Make sure downloadhadisddata is properly set up, because it's called
+%Make sure downloadprephadisddata is properly set up, because it's called
     %multiple times from within this loop
 %Also ensure makefigure=1 in subdailyanalysis
 if subdailyneighboringcombo==1
@@ -999,3 +1007,93 @@ if counteragridptsabovethreshs==1
     eragridptcounts=[sum33cbyyear' sum31cbyyear' sum29cbyyear' sum27cbyyear'];
     dlmwrite('eragridptcounts.txt',eragridptcounts,'delimiter','\t','precision',5);
 end
+
+
+%Validation in response to reviewer comments
+%Find RH of all a. 27+ WBT occurrences, b. 31+ WBT occurrences, and c. 35+ WBT occurrences, and create validation plot
+%Also, remove bad data (RH>100%)
+if computerhofoccurrences==1
+    clear tdistn27;clear dewptdistn27;clear rhdistn27;
+    clear tdistn31;clear dewptdistn31;clear rhdistn31;
+    clear tdistn35;clear dewptdistn35;clear rhdistn35;
+    c27=0;c31=0;c35=0;baddatac=0;
+    for stn=1:curnumstns
+        for day=17533:31777
+            if finalwbtarraydj(stn,day,3)>=27
+                c27=c27+1;
+                if finaldewptarray(stn,day,3)>finaltarray(stn,day,3)+0.5
+                    finaldewptarray(stn,day,3)=NaN;finaldewptarray(stn,day,4)=NaN;
+                    finaltarray(stn,day,3)=NaN;finaltarray(stn,day,4)=NaN;
+                    finalwbtarraydj(stn,day,3)=NaN;finalwbtarraydj(stn,day,4)=NaN;
+                    baddatac=baddatac+1;
+                else
+                    tdistn27(c27)=finaltarray(stn,day,3);
+                    dewptdistn27(c27)=finaldewptarray(stn,day,3);
+                    rhdistn27(c27)=calcrhfromTanddewpt(tdistn27(c27),dewptdistn27(c27));
+                end
+            end
+            if finalwbtarraydj(stn,day,3)>=31
+                c31=c31+1;
+                tdistn31(c31)=finaltarray(stn,day,3);
+                dewptdistn31(c31)=finaldewptarray(stn,day,3);
+                rhdistn31(c31)=calcrhfromTanddewpt(tdistn31(c31),dewptdistn31(c31));
+            end
+            if finalwbtarraydj(stn,day,3)>=35
+                c35=c35+1;
+                tdistn35(c35)=finaltarray(stn,day,3);
+                dewptdistn35(c35)=finaldewptarray(stn,day,3);
+                rhdistn35(c35)=calcrhfromTanddewpt(tdistn35(c35),dewptdistn35(c35));
+            end
+        end
+    end
+    %Only needed to save once, after this bad data was eliminated
+    %save(strcat(datadir,'finalwbtarrayfinaldj19312017.mat'),'finalwbtarraydj','-v7.3');
+
+    if todo==27
+        tdistn=tdistn27;rhdistn=rhdistn27;
+        xt=[4 9 14 19 24 29];xtl={'30','35','40','45','50','55'};
+    elseif todo==31
+        tdistn=tdistn31;rhdistn=rhdistn31;
+        xt=[5 10 15 20 25];xtl={'35','40','45','50','55'};
+    elseif todo==35
+        tdistn=tdistn35;rhdistn=rhdistn35;
+        xt=[5 10 15 20 25];xtl={'35','40','45','50','55'};
+    end
+    
+    vectorofts=todo:1:55;
+    vectorofrhs=10:5:100;
+    counts=zeros(size(vectorofts,2),size(vectorofrhs,2));
+    for i=1:size(tdistn,2)
+        for j=1:size(vectorofts,2)
+            for k=1:size(vectorofrhs,2)
+                if abs(tdistn(i)-vectorofts(j))<=0.5 && abs(rhdistn(i)-vectorofrhs(k))<=2.5
+                    counts(j,k)=counts(j,k)+1;
+                end
+            end
+        end
+    end
+    counts=counts';counts=flipud(counts);
+    invalid=counts==0;counts(invalid)=NaN;
+    figure(109);clf;curpart=1;highqualityfiguresetup;
+    imagescnan(counts);h=colorbar;ylabel(h,'Total Count (Station-Days)');
+    colormap(colormaps('blueyellowred','more','not'));
+    xticks(xt);xticklabels(xtl);
+    xlabel(strcat('Dry-Bulb Temperature (',char(176),'C)'),'fontsize',14,'fontweight','bold','fontname','arial');
+    yticks([1 5 9 13 17]);yticklabels({'100','80','60','40','20'});
+    ylabel('Relative Humidity (%)','fontsize',14,'fontweight','bold','fontname','arial');
+    set(gca,'fontsize',14,'fontweight','bold','fontname','arial');
+    title(strcat('Wet-Bulb Temperatures >= ',num2str(todo),char(176),'C'),'fontsize',18,'fontweight','bold','fontname','arial');
+    figname=strcat('validationtvsrh',num2str(todo),'c');curpart=2;highqualityfiguresetup;
+end
+
+%Dumping ground for various checks and validations
+if randomtroubleshooting==1
+    for i=1:size(wbt35cinstances,1)
+        thisstn=wbt35cinstances(i,1);
+        thisday=wbt35cinstances(i,2);
+        tw(i)=wbt35cinstances(i,7);
+        assoct(i)=tarray(thisstn,thisday,3);
+        assoctd(i)=tdarray(thisstn,thisday,3);
+    end
+end
+
