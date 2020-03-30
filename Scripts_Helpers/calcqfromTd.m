@@ -9,8 +9,8 @@ function qarray = calcqfromTd(Tdarray)
 %First, compute vapor pressure
 vp=6.112.*exp((17.67.*Tdarray)./(Tdarray+243.5));
 
-%Then, specific humidity is trivial to compute, just having to assume that sfc pressure is 1013 mb
-sfcP=1013;
+%Then, specific humidity is trivial to compute, assuming that sfc pressure is 1010 mb
+sfcP=1010;
 qarray=1000.*(0.622.*vp)./(sfcP-(0.378.*vp));
 
 

@@ -12,18 +12,17 @@
 %vararginnew={'variable';'wind';'mystep';1;'contour';0;...
                 %'vectorData';data;'overlaynow';0;'anomavg';'avg'};
 
-%Shaded WBT:
+%Shaded map:
+    %data={theselats;theselons;mydata};
     %vararginnew={'underlayvariable';'wet-bulb temp';'contour';0;...
-    %'underlaycaxismin';0.1;'underlaycaxismax';0.5;'overlaynow';0;'datatounderlay';data;'centeredon';180};
+    %'underlaycaxismin';0.1;'underlaycaxismax';0.5;'overlaynow';0;'datatounderlay';data;'centeredon';180;'conttoplot';'all'};
     %datatype='NARR';
     %region='us-ne';
+    %plotModelData(data,region,vararginnew,datatype);
 
     
 %%%%In all cases, script is then summoned by simply calling %%%%plotModelData(data,region,vararginnew,datatype)%%%%
 
-
-%If caxismethod='regionalxx', then mystep is overwritten to match this
-%regional formulation, even if mystep was explicitly specified in the function call
 
 %VERY IMPORTANT
 %Input latitude, longitude, and data arrays must be oriented such that north is
@@ -34,11 +33,6 @@
 function [caxisRange,mystep,mycolormap,fullshadingdescr,fullcontoursdescr,windbarbsdescr,...
     refval,normrefveclength,caxis_min,caxis_max]=...
     plotModelData(data,region,vararginnew,datatype)
-
-addtext=0; %whether to algorithmically add 'after-market' text, or whether to save this step for highqualityfiguresetup
-    %essentially, set to 1 if saving images via screenshot (makes things easier but doesn't look quite as nice)
-    %set to 0 if saving images via highqualityfiguresetup into png or pdf format
-    
 
 
 caxisRange=[];
@@ -109,6 +103,8 @@ else
             case 'variable'
                 vartype=val; %'generic scalar', 'wind', 'temperature', 'height', 'wet-bulb temp',...
                     %'wv flux convergence', or 'specific humidity'
+            case 'conttoplot'
+                conttoplot=val;
             case 'contour'
                 contour=val;
             case 'mystep'
@@ -184,10 +180,11 @@ else
                 plotasrasters=val; %1 plots as rasters (mostly to address wrap-around issues for full world maps), 0 does the original default
             case 'facealphaval'
                 facealphaval=val;
+            case 'stippling'
+                signifpts=val;
         end
     end
 end
-%disp('line 183');disp(omitfirstsubplotcolorbar);
 exist transparency;
 if ans==0;transparency=1;end %i.e. make normal (non-transparent)
 exist plotasrasters;
@@ -202,7 +199,6 @@ if noNewFig~=1
     set(fg,'Color',[1,1,1]);
     axis off;
     title(fgTitle);xlabel(fgXaxis);ylabel(fgYaxis);
-    %disp('line 200');
 end
 
 exist contourlabels;
@@ -259,83 +255,108 @@ elseif strcmp(region,'nhplustropics')
     else
         westlon=-180;eastlon=180;
     end
+elseif strcmp(region,'world60s60n_mainlandareasonly')
+    southlat=-60;northlat=60;westlon=-130;eastlon=160;mapproj='robinson';conttoplot='all';
 elseif strcmp(region,'world50s50n')
-    southlat=-50;northlat=50;westlon=-180;eastlon=180;mapproj='robinson';
+    southlat=-50;northlat=50;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
+elseif strcmp(region,'world45s45n')
+    southlat=-45;northlat=45;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
+elseif strcmp(region,'world40s40n')
+    southlat=-40;northlat=40;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
+elseif strcmp(region,'world35s35n')
+    southlat=-35;northlat=35;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
+elseif strcmp(region,'world30s30n')
+    southlat=-30;northlat=30;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
 elseif strcmp(region, 'nnh')
-    southlat=30;northlat=90;westlon=-180;eastlon=180;mapproj='stereo';
+    southlat=30;northlat=90;westlon=-180;eastlon=180;mapproj='stereo';conttoplot='all';
 elseif strcmp(region, 'nh0to60')
-    southlat=0;northlat=60;westlon=-180;eastlon=180;mapproj='robinson';
+    southlat=0;northlat=60;westlon=-180;eastlon=180;mapproj='robinson';conttoplot='all';
 elseif strcmp(region, 'nh0to60n140wto140e')
-    southlat=0;northlat=60;westlon=-140;eastlon=140;mapproj='robinson';
+    southlat=0;northlat=60;westlon=-140;eastlon=140;mapproj='robinson';conttoplot='all';
+elseif strcmp(region, 'north-america-europe')
+    southlat=20;northlat=65;westlon=-135;eastlon=50;mapproj='robinson';conttoplot='all';
 elseif strcmp(region, 'north-atlantic')
-    worldmap([25 75], [-75 10]);mapproj='lambert';
+    worldmap([25 75],[-75 10]);mapproj='lambert';conttoplot='all';
+elseif strcmp(region,'alps')
+    southlat=39.5;northlat=57.5;westlon=1;eastlon=21;mapproj='mercator';conttoplot='Europe';
 elseif strcmp(region,'middle-east-india')
-    southlat=5;northlat=45;westlon=30;eastlon=100;mapproj='mercator';
+    southlat=5;northlat=45;westlon=30;eastlon=100;mapproj='mercator';conttoplot='all';
 elseif strcmp(region,'middle-east')
-    southlat=10;northlat=45;westlon=30;eastlon=80;mapproj='mercator';
+    southlat=10;northlat=45;westlon=30;eastlon=80;mapproj='mercator';conttoplot='Asia';
 elseif strcmp(region,'middle-east-small')
-    southlat=15;northlat=36;westlon=30;eastlon=70;mapproj='mercator';
+    southlat=15;northlat=36;westlon=30;eastlon=70;mapproj='mercator';conttoplot='Asia';
 elseif strcmp(region,'persian-gulf')
-    southlat=20;northlat=32;westlon=43;eastlon=60;mapproj='mercator';
+    southlat=20;northlat=32;westlon=43;eastlon=60;mapproj='mercator';conttoplot='all';
 elseif strcmp(region,'south-asia')
-    southlat=5;northlat=35;westlon=60;eastlon=95;mapproj='mercator';    
+    southlat=5;northlat=35;westlon=60;eastlon=95;mapproj='mercator';conttoplot='Asia';
+elseif strcmp(region,'schina')
+    southlat=17.5;northlat=36.5;westlon=96;eastlon=115;mapproj='mercator';conttoplot='Asia';
+elseif strcmp(region,'saus')
+    southlat=-38;northlat=-19;westlon=124.5;eastlon=143.5;mapproj='mercator';conttoplot='Australia';
+elseif strcmp(region,'safr')
+    southlat=-37;northlat=-20;westlon=21;eastlon=41;mapproj='mercator';conttoplot='Africa';
+elseif strcmp(region,'samer')
+    southlat=-37;northlat=-20;westlon=-72.5;eastlon=-52.5;mapproj='mercator';conttoplot='all';
 elseif strcmp(region, 'north-america')
-    southlat=20;northlat=80;westlon=-170;eastlon=-35;mapproj='lambert';
+    southlat=20;northlat=80;westlon=-170;eastlon=-35;mapproj='lambert';conttoplot='all';
 elseif strcmp(region, 'usa-canada')
-    southlat=23;northlat=70;westlon=-140;eastlon=-50;mapproj='robinson';
+    southlat=23;northlat=70;westlon=-140;eastlon=-50;mapproj='robinson';conttoplot='North America';
 elseif strcmp(region,'midlatband')
-    southlat=10;northlat=60;westlon=-180;eastlon=-50;mapproj='lambert';
+    southlat=10;northlat=60;westlon=-180;eastlon=-50;mapproj='lambert';conttoplot='all';
 elseif strcmp(region, 'na-east')
-    southlat=25;northlat=55;westlon=-100;eastlon=-50;mapproj='lambert';
+    southlat=25;northlat=55;westlon=-100;eastlon=-50;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region,'usa-full')
-    southlat=15;northlat=75;westlon=-180;eastlon=-60;mapproj='lambert';
+    southlat=15;northlat=75;westlon=-180;eastlon=-60;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region,'usaminushawaii-tight')
-    southlat=22;northlat=73;westlon=-175;eastlon=-65;mapproj='robinson';
+    southlat=22;northlat=73;westlon=-175;eastlon=-65;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region,'usaminushawaii-tight2')
-    southlat=20;northlat=75;westlon=-175;eastlon=-60;mapproj='robinson';
+    southlat=20;northlat=75;westlon=-175;eastlon=-60;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region,'usaminushawaii-tight3') %a little more centered over the Lower 48
-    southlat=20;northlat=75;westlon=-165;eastlon=-45;mapproj='robinson';
+    southlat=20;northlat=75;westlon=-165;eastlon=-45;mapproj='robinson';conttoplot='North America';
 elseif strcmp(region, 'usa-exp')
-    southlat=23;northlat=60;westlon=-135;eastlon=-55;mapproj='lambert';
+    southlat=23;northlat=60;westlon=-135;eastlon=-55;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region, 'usa-exp2')
-    southlat=15;northlat=75;westlon=-165;eastlon=-50;mapproj='lambert';
+    southlat=15;northlat=75;westlon=-165;eastlon=-50;mapproj='lambert';conttoplot='North America';
 elseif strcmp(region, 'usa')
-    southlat=25;northlat=50;westlon=-126;eastlon=-64;mapproj='robinson';
+    southlat=25;northlat=50;westlon=-126;eastlon=-64;mapproj='robinson';conttoplot='North America';
+elseif strcmp(region,'rockies')
+    southlat=31;northlat=51;westlon=-111;eastlon=-93;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'greater-eastern-usa')
-    southlat=18;northlat=50;westlon=-102;eastlon=-65;mapproj='robinson';
+    southlat=18;northlat=50;westlon=-102;eastlon=-65;mapproj='robinson';conttoplot='North America';
 elseif strcmp(region, 'eastern-usa')
-    southlat=23;northlat=50;westlon=-100;eastlon=-65;mapproj='robinson';
+    southlat=23;northlat=50;westlon=-100;eastlon=-65;mapproj='robinson';conttoplot='North America';
 elseif strcmp(region,'us-mw')
-    southlat=33;northlat=48;westlon=-105;eastlon=-80;mapproj='mercator';
+    southlat=33;northlat=48;westlon=-105;eastlon=-80;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region,'omaha-area')
-    southlat=39.5;northlat=43;westlon=-98;eastlon=-94;mapproj='mercator';
+    southlat=39.5;northlat=43;westlon=-98;eastlon=-94;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'us-ne')
-    southlat=35;northlat=50;westlon=-85;eastlon=-60;mapproj='mercator';
+    southlat=35;northlat=50;westlon=-85;eastlon=-60;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region,'us-se')
-    southlat=23;northlat=38;westlon=-100;eastlon=-74;mapproj='mercator';
+    southlat=23;northlat=38;westlon=-100;eastlon=-74;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region,'us-gulf-coast')
-    southlat=24;northlat=32;westlon=-100;eastlon=-78;mapproj='mercator';
+    southlat=24;northlat=32;westlon=-100;eastlon=-78;mapproj='mercator';conttoplot='North America';
+elseif strcmp(region, 'western-usa')
+    southlat=30;northlat=54;westlon=-125;eastlon=-90;mapproj='robinson';conttoplot='North America';
 elseif strcmp(region,'us-sw')
-    southlat=25;northlat=45;westlon=-130;eastlon=-105;mapproj='mercator';
+    southlat=25;northlat=45;westlon=-130;eastlon=-105;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region,'us-sw-small')
-    southlat=31;northlat=39;westlon=-121;eastlon=-109;mapproj='mercator';
+    southlat=31;northlat=39;westlon=-121;eastlon=-109;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region,'labasin')
-    southlat=33.5;northlat=34.3;westlon=-119.1;eastlon=-117.3;mapproj='mercator';
+    southlat=33.5;northlat=34.3;westlon=-119.1;eastlon=-117.3;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'us-ne-small')
-    southlat=38;northlat=46;westlon=-80;eastlon=-68;mapproj='mercator';
+    southlat=38;northlat=46;westlon=-80;eastlon=-68;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'nyc-area')
-    southlat=39;northlat=42;westlon=-76;eastlon=-72;mapproj='mercator';
+    southlat=39;northlat=42;westlon=-76;eastlon=-72;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'nyc-area-small')
-    southlat=40.4;northlat=41.1;westlon=-74.4;eastlon=-73.6;mapproj='mercator';
+    southlat=40.4;northlat=41.1;westlon=-74.4;eastlon=-73.6;mapproj='mercator';conttoplot='North America';
 elseif strcmp(region, 'nyc-only')
-    southlat=40.5;northlat=40.9;westlon=-74.1;eastlon=-73.7;mapproj='mercator';
+    southlat=40.5;northlat=40.9;westlon=-74.1;eastlon=-73.7;mapproj='mercator';conttoplot='North America';
 else
     worldmap(region);
     underlaydata{1}(:, end+1) = underlaydata{1}(:, end) + (underlaydata{1}(:, end)-underlaydata{1}(:, end-1));
     underlaydata{2}(:, end+1) = underlaydata{2}(:, end) + (underlaydata{2}(:, end)-underlaydata{2}(:, end-1));
 end
 
-%disp('line 306');disp(centeredon);
 
 numgridptsperdegree1=sz1/360;
 numgridptsperdegree2=sz2/180;
@@ -376,7 +397,6 @@ elseif strcmp(datatype,'NCEP192')
 elseif strcmp(datatype,'CPC') %north on top, centered on 180
     northindex=1+180-2*northlat;southindex=180-2*southlat;
     westindex=1;eastindex=720;
-    %disp('line 349');disp(northindex);disp(southindex);
 elseif strcmp(datatype,'custom') %any size array that's desired can be accommodated
     northindex=1;southindex=sz1;
     westindex=1;eastindex=sz2;
@@ -389,7 +409,6 @@ else
     if northindex==0;northindex=1;end
     if westindex==0;westindex=1;end
     if eastindex==0;eastindex=1;end
-    %disp(southindex);disp(northindex);disp(westindex);disp(eastindex);
 end
 
 %If necessary, move Eastern Hemisphere to left so array is centered on 180
@@ -404,10 +423,8 @@ if ans==1
         %disp('line 297');
         disp('Moving Eastern Hemisphere to left to center array on 180 W');
         if ans==1
-            %disp('line 307');%figure(698);imagescnan(underlaydata{3});
             arraysz=size(underlaydata{3});
             underlaydata{3}=[underlaydata{3}(:,arraysz(2)/2+1:arraysz(2)) underlaydata{3}(:,1:arraysz(2)/2)];
-            %disp('line 310');%figure(699);imagescnan(underlaydata{3});
         end
     end
 end
@@ -426,18 +443,19 @@ if ~strcmp(datatype,'OISST')
         northindex=1;eastindex=1;southindex=sz2;westindex=sz1;
     end
 end
-%disp('line 393');disp(northindex);disp(southindex);disp(eastindex);disp(westindex);
 
 axesm(mapproj,'MapLatLimit',[southlat northlat],'MapLonLimit',[westlon eastlon]);
 framem on;gridm off;mlabel off;plabel off;axis on;axis off;
+set(gca,'Position',[0.06 0.6 0.4 0.2]);
 
-if length(colormapVal)>0;colormap(colormapVal);else;colormap('jet');end
-mycolormap=colormap;
+if ~noNewFig
+    if length(colormapVal)>0;set(gca,'colormap',colormapVal);else;set(gca,'colormap',colormap('jet'));end
+    mycolormap=colormap;
+end
 
-%Underlaydata{3} is the matrix to be plotted in color-filled contours, i.e. either the only thing, or the underlay
 exist underlaydata;
 if ans==0
-    underlaydata=data;%disp(min(min(underlaydata{3})));disp('line 402');
+    underlaydata=data;
 end
 exist vartype;
 if ans==0;underlayvartype=vartype;end
@@ -530,33 +548,26 @@ if ans==0
         end
     end
 end
-%disp('line 447');disp(mystepunderlay);disp(underlaycaxis_min);disp(underlaycaxis_max);figure(100);imagescnan(underlaydata{3});return;
 
 %Set underlay-data color axis
 exist underlaycaxis_min;
 if ans==1
     caxisRangeunderlay=[underlaycaxis_min,underlaycaxis_max];caxis(caxisRangeunderlay);
-    %disp('line 530');disp(caxisRangeunderlay);
 end
 
-%disp('line 533');return;
 
 %Display the underlaid (or only) data, contoured or not
-%This loop occasionally and unpredictably behaves problematically, so keep
-    %an eye out for that
+%This loop occasionally and unpredictably behaves problematically, so keep an eye out for that
 exist underlayvartype;
 if ans==1
     if contour
         if size(underlaydata{3},1)~=size(underlaydata{2},1);underlaydata{3}=underlaydata{3}';end
-        %disp('line 549');disp(class(underlaydata{1}));disp(max(max((underlaydata{3}))));
-        %disp(size(underlaydata{1}));disp(size(underlaydata{2}));disp(size(underlaydata{3}));
         exist unevencolordemarcations;
         if ans==0 %step is set or chosen to be a fixed value
-            v=underlaycaxis_min:mystepunderlay:underlaycaxis_max;%disp('line 544');disp(v);
+            v=underlaycaxis_min:mystepunderlay:underlaycaxis_max;
         else %variable intervals are set to demarcate colors
-            v=unevencolordemarcations;%disp('line 555');
+            v=unevencolordemarcations;
         end
-        %figure(100);imagescnan(underlaydata{3});colorbar;return;
         exist nolinesbetweenfilledcontours;
         %Option a: no lines between filled contours
         if ans==1
@@ -578,22 +589,16 @@ if ans==1
         else %Option b: black lines between filled contours
             if plotasrasters==1
                 latlim=[southlat northlat];
-                %if westlon<0;westlon=westlon+360;end
-                %if eastlon<0;eastlon=eastlon+360;end
-                %disp(westlon);disp(eastlon);
                 if westlon<0;eastlon=eastlon-westlon;westlon=0;end
-                %disp(westlon);disp(eastlon);
                 if strcmp(region,'world');westlon=0;eastlon=360;end %if plotting entire globe
                 lonlim=[westlon eastlon];
                 Z1=underlaydata{3};
                 R=georefcells(latlim,lonlim,size(Z1),'ColumnsStartFrom','north');
-                contourm(Z1,R,v,'Fill','on');hold on;%disp('line 561');
+                contourm(Z1,R,v,'Fill','on');hold on;
             else %the original default mode
-                disp('line 590');disp(transparency);disp(v);
+                %disp(transparency);disp(v);
                 h=contourm(underlaydata{1},underlaydata{2},underlaydata{3},v,'Fill','on');
                 hold on;
-                %h=contourm(underlaydata{1},underlaydata{2},underlaydata{3},v,'LineColor','k');hold on;
-                %h=contourf(underlaydata{1},underlaydata{2},underlaydata{3},v,'LineColor','k');hold on;
                 if transparency~=1;alpha(transparency);end
             end
         end
@@ -604,7 +609,29 @@ if ans==1
         %contourm(underlaydata{1},underlaydata{2},underlaydata{3},[mystepunderlay:mystepunderlay:underlaycaxis_max],...
         %    'Fill','on');
     else
-        pcolorm(underlaydata{1},underlaydata{2},underlaydata{3},'FaceAlpha',facealphaval);hold on;
+        disp('line 606');disp(facealphaval);
+        t=pcolorm(underlaydata{1},underlaydata{2},underlaydata{3},'FaceAlpha',facealphaval);hold on;
+        %set(t,'FaceAlpha','texturemap','AlphaData',double(~isnan(underlaydata{3})));
+            %the above line was recently active, but started causing
+            %obscure facealpha errors
+            
+        %Applying stippling, if desired (adds about 5 min)
+        %This code needs to be adjusted manually for each dataset
+        exist signifpts;
+        if ans==1
+            numsigniffound=0;
+            for i=1:size(underlaydata{1},1)
+                for j=1:size(underlaydata{1},2)
+                    if i<=35 || i>=55 %extratropics
+                        if signifpts(i,j)==1
+                            plotm(underlaydata{1}(i,j),underlaydata{2}(i,j),signifpts(i,j),'k.');
+                            numsigniffound=numsigniffound+1;
+                        end
+                    end
+                end
+                if rem(i,20)==0;fprintf('At %d for stippling section of plotModelData\n',i);end
+            end
+        end
     end
 end
 
@@ -628,7 +655,6 @@ end
     
 %Defaults for all regions: refvectorshrinkfactor=1, maparea=maparea/4
 if length(vectorData)~=0
-    %disp('line 598');
     maparea=(northlat-southlat)*(eastlon-westlon);
     if strcmp(region,'nhplustropics') || strcmp(region, 'north-america') || strcmp(region,'midlatband') || strcmp(region,'usa-canada')
         q=4;extraskipstepfactor=2; %only plot every qth vector, further skipping selon skipstep
@@ -758,12 +784,11 @@ if overlaynow==1
     exist caxis_min;
     if ans==1
         %caxisRange=[caxis_min,caxis_max];caxis(caxisRange);
-        %disp('line 612');disp(caxisRange);
     end
 
     %The next 12 lines may have to be commented out, depending on the specifics of the situation
     if size(overlaydata,1)==3 %if it's wind, we don't want it to have labeled contours
-        v=caxis_min:mystep:caxis_max;%disp('line 617');disp(v);
+        v=caxis_min:mystep:caxis_max;%disp('line 781');disp(v);
         exist omitzerocontour;
         if ans==1
             if omitzerocontour==1
@@ -777,7 +802,7 @@ if overlaynow==1
                 [C,h]=contourm(overlaydata{1},overlaydata{2},overlaydata{3},v,'LineWidth',1,'LineColor','k');
             end
         else
-            [C,h]=contourm(overlaydata{1},overlaydata{2},overlaydata{3},v,'LineWidth',1,'LineColor','k');
+            [C,h]=contourm(overlaydata{1},overlaydata{2},overlaydata{3},v,'LineWidth',1.5,'LineColor','k');
         end
         
         %Space out the labels so there's not too many but every line is still labeled
@@ -813,8 +838,6 @@ if overlaynow==1
     else
         overlaysteps=overlaymin:mystep:overlaymax;
     end
-    %disp('line 782');disp(overlaysteps);
-    %disp(overlaymax);disp(overlaymin);disp(overlayrange);disp(overlayrangetenths);disp(overlaysteps);disp('hi');
     %Round steps to nearest 'number that ends in a zero' so they aren't odd values
     for i=1:size(overlaysteps,2)
         if abs(overlaysteps(i))<10
@@ -826,7 +849,6 @@ if overlaynow==1
         end
     end
     overlaysteps=unique(overlaysteps); %remove duplicate values
-    %disp(overlaysteps);disp('hi 2.0');
 end
 
 %Second overlaid variable could show up under either of these names
@@ -834,8 +856,6 @@ exist overlayvartype2;phrfound=0;
 if ans==1
     disp('line 767');
     if strcmp(overlayvartype2,'wind');phr='Arrows: Wind in m/s';else phr='';end
-    if addtext==1;disp('line 897');uicontrol('Style','text','String',phr,'Units','normalized',...
-        'Position',[0.4 0.04 0.2 0.05],'BackgroundColor','w','FontName','Arial','FontSize',14);end
     phrfound=1;
 end
 exist overlaydata;
@@ -845,8 +865,6 @@ else
     phr='';
 end
 windbarbsdescr=phr;
-
-disp('line 847');
 
 %Plot geography in background
 load coast;framem on;
@@ -925,10 +943,6 @@ if strcmp(region,'us-ne') || strcmp(region,'us-ne-small') || strcmp(region,'us-s
     zoom(2.5);ylim([0.6 1.0]);
 end
 
-%Might need to repeat some steps so that parts of the map are not accidentally overwritten
-skiphere=0;
-if skiphere==0
- 
    
 
 %Add text labels in various places
@@ -939,8 +953,6 @@ if overlaynow==1
             underlaydatanum=3;phr=sprintf('Shading: %s',varlistnames{underlaydatanum});
         elseif strcmp(underlayvartype,'temperature')
             underlaydatanum=1;phr=sprintf('Shading: %s in deg C',varlistnames{underlaydatanum});
-        %elseif strcmp(underlayvartype,'wind') %script not equipped to deal with underlaid wind yet
-        %    phr=sprintf('Shading: %s in m/s',varlistnames{underlaydatanum});
         elseif strcmp(underlayvartype,'wet-bulb temp')
             underlaydatanum=2;phr=sprintf('Shading: %s in deg C',varlistnames{underlaydatanum});
         elseif strcmp(underlayvartype,'specific humidity')
@@ -955,8 +967,6 @@ if overlaynow==1
             datanum=3;phr=sprintf('Shading: %s',varlistnames{datanum});
         elseif strcmp(vartype,'temperature')
             datanum=1;phr=sprintf('Shading: %s in deg C',varlistnames{datanum});
-        %elseif strcmp(vartype,'wind') %script not equipped to deal with underlaid wind yet
-        %    phr=sprintf('Shading: %s in m/s',varlistnames{datanum});
         elseif strcmp(vartype,'wet-bulb temp')
             datanum=2;phr=sprintf('Shading: %s in deg C',varlistnames{datanum});
         elseif strcmp(vartype,'specific humidity')
@@ -968,8 +978,6 @@ if overlaynow==1
         end
     end
     shadingdescr=phr;
-    if addtext==1;disp('line 923');uicontrol('Style','text','String',phr,'Units','normalized',...
-        'Position',[0.4 0.09 0.2 0.05],'BackgroundColor','w','FontName','Arial','FontSize',14);end
     
     if strcmp(overlayvartype,'height')
         overlaydatanum=3;phrcont=sprintf('Contours: %s in m',varlistnames{overlaydatanum});
@@ -993,8 +1001,6 @@ if contour
     if ans==1
         if strcmp(underlayvartype,'height')
             phr=sprintf('(interval: %0.0f %s)',mystepunderlay,dispunits);
-        %elseif strcmp(underlayvartype,'wv flux convergence')
-        %    phr=sprintf('(Shading interval: %0.2f %s)',mystep,dispunits);
         else
             exist unevencolordemarcations;
             if ans==0;phr=sprintf(' (interval: %0.1f %s)',mystepunderlay,dispunits);end
@@ -1002,8 +1008,6 @@ if contour
     else
         if strcmp(vartype,'height')
             phr=sprintf('(interval: %0.0f %s)',mystep,dispunits);
-        %elseif strcmp(vartype,'wv flux convergence')
-        %    phr=sprintf('(Shading interval: %0.2f %s)',mystep,dispunits);
         else
             phr=sprintf(' (interval: %0.1f %s)',mystep,dispunits);
         end
@@ -1021,31 +1025,14 @@ if contour
         end
     end
     
-    if addtext==1;disp('line 950');uicontrol('Style','text','String',shadingphr,...
-        'Position',[100 30 0.2 0.05],'BackgroundColor','w','FontName','Arial','FontSize',18);end
-    if overlaynow==1 && addtext==1
+    if overlaynow==1
         disp('line 731');uicontrol('Style','text','String',phrcont,'Units','normalized',...
                 'Position',[0.4 0.07 0.2 0.05],'BackgroundColor','w','FontName','Arial','FontSize',18);
     end
 end
 
 
-if contourlabels==1
-    exist manualcontourlabels;
-    if ans==1
-        t=clabelm(C,h,'manual');
-        disp('line 1007');
-    else
-        t=clabelm(C,h,'LabelSpacing',labelspacing);
-    end
-    set(t,'FontSize',15,'FontWeight','bold');
-end
-
-
 %Finally, if plotting wind vectors, use quivermc to do so
-    %Also choose either 'addtext' or 'dontaddtext' for the reference vector
-    %-- this must be plotted manually though, eyeballing the correct length
-        %(see explatoratorydataanalysis for an example)
 exist vectorData;
 if ans==1
     if length(vectorData)~=0
@@ -1070,8 +1057,21 @@ exist fullshadingdescr;if ans==0;fullshadingdescr='';end
 exist fullcontoursdescr;if ans==0;fullcontoursdescr='';end
 clear centeredon;
 
-%disp('Made it through entire plotModelData script');
 
+set(gca,'Position',[0.1 0.1 0.8 0.8]);
 tightmap;
+
+if contourlabels==1
+    exist manualcontourlabels;
+    if ans==1
+        t=clabelm(C,h,'manual');
+    else
+        t=clabelm(C,h,[2,2.5,3]);
+    end
+    set(t,'FontSize',15,'FontWeight','bold');
 end
+
+exist manualcontourlabels;
+if ans==0;tightmap;end
+
 

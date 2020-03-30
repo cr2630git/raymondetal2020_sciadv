@@ -7,7 +7,7 @@ function outputvec = checkifthingsareelementsofvector(inputvec,thingstocheck)
 
 
 %Turn row vectors into column vectors
-%if size(thingstocheck,1)==1;thingstocheck=thingstocheck';end
+if size(thingstocheck,1)==1;thingstocheck=thingstocheck';end
 %if size(inputvec,1)==1;inputvec=inputvec';end
 
 %Do the search -- progresses row by row, whether for 1D or 2D searching
@@ -15,7 +15,7 @@ for i=1:size(thingstocheck,1)
     %Current thing to check is thingstocheck(i)
     curthingfound=0;
     for j=1:size(inputvec,1)
-        if size(inputvec,1)>1 && size(inputvec,2)>1 %i.e. searching over the rows of a 2D array
+        if size(inputvec,2)>1 %i.e. searching over the rows of a 2D array
             if isequal(thingstocheck(i,:),inputvec(j,:))
                 curthingfound=1;
             end

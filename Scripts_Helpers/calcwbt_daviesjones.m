@@ -211,8 +211,9 @@ function [Twb,Teq,epott]=calcwbt_daviesjones(TemperatureC,Pressure,Humidity,Humi
         if length(subdo)>0
             Twb(subdo) = TemperatureK(subdo)-C;
             for www=subdo(:)'
-                disp(sprintf('WARNING-Wet_Bulb failed to converge. Setting to T: WB, P, T, RH, Delta: %0.2f, %0.0f, %0.2f, %0.1f, %0.2g, %0.1f, %0.2g', [Twb(www), Pressure(www), TemperatureK(www), relhum(www), ...
+                disp(sprintf('WARNING-Wet_Bulb failed to converge. Stopping here, with WB, P, T, RH, Delta: %0.2f, %0.0f, %0.2f, %0.1f, %0.2g, %0.1f, %0.2g', [Twb(www), Pressure(www), TemperatureK(www), relhum(www), ...
                                     delta(www)]));
+                return;
             end
         end
 

@@ -1,34 +1,41 @@
 function colormaprgbvalues = colormaps(vartoplot,moreorfewercolors,paleornot)
-%To aid in plotting, returns the numerical RGB values of the colormap that I decided to associate
-    %with a given variable
-%These are found and explored using the NCL Color Table Gallery
-%Current options for vartoplot are 't', 'wbt', 'q', 'sst', 'gh', 'rainbow', 'circular', 
-    %'category', '12months', 'whiteorangered'
+%A place to store the numerical RGB values associated with a variety of useful colormaps
+%Many of these were found and explored using the NCL Color Table Gallery
+
+%Options for vartoplot:
 %t ---- blue-white-red
 %wbt -- yellow-orange-red
 %q ---- brown-white-green
 %sst -- white-centered rainbow
 %gh --- green-white-magenta
-%multicateg--red-orange-light blue-dark blue
+%multicateg--red-orange-white-light blue-dark blue
 %rainbow--jet
+%classy rainbow -- similar to rainbow, but darker and including purple
 %circular--a circular rainbow
-%category--red, orange, green, sky blue, blue, purple
+%category--red, orange, green, sky blue, blue, purple, gray, brown
+    %(variants include 6 and 2 colors only)
 %12months--12 colors designed to illustrate monthly data, with Dec wrapping around to Jan
 %whiteorangered--exactly what it sounds like
 %whitelightbluedarkblue--exactly what it sounds like
 %blueyellowred--exactly what it sounds like
 %whiteendrainbow--exactly what it sounds like
 %orangered--the darker 3/4 of colors from the yellow-orange-red wbt scale
-%Current options for moreorfewercolors are 'more', 'fewerodd', 'fewereven' --> each general colormap has a version with many colors,
-    %and two with fewer colors I created for plots that require a few discrete categories, created simply by taking
-    %some of the colors from the smooth counterpart
-%Current options for paleornot are 'pale', 'not'
 
-%Example usage: colormap(colormaps('wbt','more','pale'))
+%Current options for moreorfewercolors are 'more', 'fewerodd', 'fewereven' ('more' is default) -- 
+    %each general colormap has a version with many colors,
+    %and some with fewer colors were created for plots that require a few discrete categories
+    
+%Current options for paleornot are 'pale', 'not' ('not' is default')
+
+
+%Example usage: 
+%1. colormap(colormaps('wbt','more','pale'))
+%2. colormap(colormaps('whitelightbluedarkblue','more','not'))
 
 
 if strcmp(vartoplot,'t') && strcmp(moreorfewercolors,'more') %blue-white-red, 101 values (BlWhRe from the NCL Color Table Gallery)
-    colormaprgbvalues=[0   0 128
+    colormaprgbvalues=[255 255 255
+       0   0 128
        0   0 133
        0   0 138
        0   0 143
@@ -291,7 +298,8 @@ elseif strcmp(vartoplot,'q') && strcmp(moreorfewercolors,'fewereven') %brown-gre
         0.000000 0.235294 0.188235];
 elseif strcmp(vartoplot,'sst') && strcmp(moreorfewercolors,'more') %white-centered rainbow, 101 values
         %(ViBlGrWhYeOrRe from the NCL Color Table Gallery)
-    colormaprgbvalues=[87   0 136
+    colormaprgbvalues=[255 255 255
+      87   0 136
       81   0 144
       75   0 152
       70   0 160
@@ -400,7 +408,6 @@ elseif strcmp(vartoplot,'sst') && strcmp(moreorfewercolors,'fewerodd') %white-ce
         255 255  34
         255 171   0
         255   0   0];
-        
 elseif strcmp(vartoplot,'sst') && strcmp(moreorfewercolors,'fewereven') %white-centered rainbow, 6 values
     colormaprgbvalues=[87   0 136
         3  56 180
@@ -410,7 +417,8 @@ elseif strcmp(vartoplot,'sst') && strcmp(moreorfewercolors,'fewereven') %white-c
         255   0   0];
 elseif strcmp(vartoplot,'wbt') && strcmp(moreorfewercolors,'more') %yellow-orange-red, 128 values
         %(MPL_YlOrRd from the NCL Color Table Gallery)
-    colormaprgbvalues=[1.000000 0.997785 0.794587
+    colormaprgbvalues=[1 1 1
+    1.000000 0.997785 0.794587
     1.000000 0.993356 0.783760
     1.000000 0.988927 0.772934
     1.000000 0.984498 0.762107
@@ -673,6 +681,9 @@ elseif strcmp(vartoplot,'gh') && strcmp(moreorfewercolors,'fewereven') %green-wh
         255 154 255
         214 0 214
         80 0 80];
+elseif strcmp(vartoplot,'gh') && strcmp(moreorfewercolors,'veryfeweven') %green-magenta, 2 values
+    colormaprgbvalues=[0 194 0
+        194 0 194];
 elseif strcmp(vartoplot,'multicateg') %red-orange-light blue-dark blue, 19 values (intended more for copying to other scripts than for usage here as a colormap)
     %its colors are called 'meteoswiss_COLORNAME' in the colors script
     colormaprgbvalues=[7  30  70
@@ -839,6 +850,136 @@ elseif strcmp(vartoplot,'rainbow') && strcmp(moreorfewercolors,'fewereven') %jet
         0.831752 1.000000 0.135990
         1.000000 0.392883 0.000000
         0.500000 0.000000 0.000000];
+elseif strcmp(vartoplot,'classyrainbow') && strcmp(moreorfewercolors,'more') %jet, 128 values
+        %(based on BlAqGrYeOrRedVi200 from the NCL Color Table Gallery)
+    colormaprgbvalues=[0 0 255
+       0  12 255
+       0  24 255
+       0  36 255
+       0  48 255
+       0  60 255
+       0  72 255
+       0  84 255
+       0  96 255
+       0 108 255
+       0 120 255
+       0 132 255
+       0 144 255
+       0 156 255
+       0 168 255
+       0 180 255
+       0 192 255
+       0 204 255
+       0 216 255
+       0 228 255
+       0 241 255
+       0 254 255
+       0 250 240
+       1 248 233
+       1 243 219
+       1 241 211
+       2 237 197
+       2 234 190
+       3 230 175
+       3 227 168
+       3 223 153
+       4 220 146
+       4 216 131
+       4 214 124
+       5 209 110
+       5 207 102
+       6 202  88
+       6 200  80
+       6 195  66
+       7 193  59
+       7 188  44
+       7 186  37
+       8 181  22
+       8 179  15
+      23 183  14
+      30 186  14
+      44 190  13
+      52 192  12
+      66 197  11
+      73 199  11
+      88 204  10
+      95 206  10
+     110 210   9
+     117 213   8
+     132 217   8
+     139 219   7
+     153 224   6
+     161 226   6
+     175 230   5
+     182 233   4
+     197 237   4
+     204 239   3
+     219 244   2
+     226 246   2
+     240 251   1
+     248 253   0
+     255 252   0
+     255 247   0
+     255 241   0
+     255 236   0
+     255 233   0
+     255 228   0
+     255 225   0
+     255 220   0
+     255 217   0
+     255 211   0
+     255 209   0
+     255 203   0
+     255 200   0
+     255 195   0
+     255 192   0
+     255 187   0
+     255 184   0
+     255 179   0
+     255 176   0
+     255 170   0
+     255 168   0
+     255 160   0
+     255 152   0
+     255 144   0
+     255 136   0
+     255 128   0
+     255 120   0
+     255 112   0
+     255 104   0
+     255  96   0
+     255  88   0
+     255  80   0
+     255  72   0
+     255  64   0
+     255  56   0
+     255  48   0
+     255  40   0
+     255  32   0
+     255  24   0
+     255  16   0
+     255   8   0
+     250   0   4
+     245   0   8
+     235   0  16
+     230   0  21
+     219   0  29
+     213   0  34
+     204   0  41
+     199   0  45
+     184   0  58
+     174   0  66
+     168   0  70
+     158   0  78
+     153   0  82
+     143   0  91
+     138   0  95
+     128   0 103
+     123   0 107
+     112   0 115
+     107   0 120
+      97   0 128
+      87   0 136];
 elseif strcmp(vartoplot,'circular') && strcmp(moreorfewercolors,'more') %jet, 129 values
         %(MPL_jet from the NCL Color Table Gallery, with every other value removed and values repeated so that they come back around)
     colormaprgbvalues=[0.000000 0.000000 0.517825
@@ -985,13 +1126,28 @@ elseif strcmp(vartoplot,'circular') && strcmp(moreorfewercolors,'fewereven') %je
         0.500000 0.000000 0.000000
         0.199241 1.000000 0.768501
         0.000000 0.000000 0.517825];
-elseif strcmp(vartoplot,'category') && strcmp(moreorfewercolors,'fewereven') %six-category, 6 values
+elseif strcmp(vartoplot,'category') && strcmp(moreorfewercolors,'fewereven') %eight-category, 8 values
+    colormaprgbvalues=[0.49412 0.11765 0.61176
+        0.01177 0.26275 0.87451
+        0.45882 0.73333 0.99216
+        0.08235 0.69020 0.10196
+        0.97647 0.45098 0.02353
+        0.89804 0 0
+        0.57255 0.58431 0.56863
+        0.39608 0.21569 0];
+elseif strcmp(vartoplot,'category') && strcmp(moreorfewercolors,'6') %six-category, 6 values
     colormaprgbvalues=[0.49412 0.11765 0.61176
         0.01177 0.26275 0.87451
         0.45882 0.73333 0.99216
         0.08235 0.69020 0.10196
         0.97647 0.45098 0.02353
         0.89804 0 0];
+elseif strcmp(vartoplot,'category') && strcmp(moreorfewercolors,'2-bluefirst') %2-category, 2 values (pale blue & pale orange)
+   colormaprgbvalues=[102/256 140/256 255/256
+       255/256 173/256 51/256];
+elseif strcmp(vartoplot,'category') && strcmp(moreorfewercolors,'2-orangefirst') %2-category, 2 values (pale blue & pale orange)
+   colormaprgbvalues=[255/256 173/256 51/256
+       102/256 140/256 255/256];
 elseif strcmp(vartoplot,'12months') %purple, dark blue, blue, pale blue, teal, olive green, 
         %neon green, light green,
         %orange, ruby, crimson, pink
@@ -1605,8 +1761,7 @@ if strcmp(paleornot,'pale') %pale version of whatever colormap was already calcu
     colormaprgbvalues=colormaprgbvalues+0.25*temp;
 end
 
-if strcmp(vartoplot,'t') || strcmp(vartoplot,'sst') || strcmp(vartoplot,'gh') ||...
-        strcmp(vartoplot,'whiteendrainbow') || strcmp(vartoplot,'multicateg')
+if max(max(colormaprgbvalues))>1
     colormaprgbvalues=colormaprgbvalues./255;
 end
 

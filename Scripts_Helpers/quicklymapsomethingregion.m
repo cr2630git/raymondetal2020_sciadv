@@ -1,5 +1,5 @@
 function quicklymapsomethingregion(regionname,valuestoplot,figc,latstouse,lonstouse,markertype,...
-    colorcutoffs,markercolors,markersize,addcolorbar,cbarvarargs,savingdir,figurename)
+    colorcutoffs,markercolors,markersize,addcolorbar,cbarvarargs,shadingcolor,savingdir,figurename)
 %Quickly map (using geoshow) a series of points situated in any region
 %listed in addborders
 %   Some typical regionnames would be 'usa', 'ne-us'
@@ -7,7 +7,10 @@ function quicklymapsomethingregion(regionname,valuestoplot,figc,latstouse,lonsto
 %   'markertype' must be a string 
 %   obviously, 'savingdir' and 'figname' must be strings as well
 
-plotBlankMap(figc,regionname,0,0,'ghost white',0);curpart=1;highqualityfiguresetup;
+%disp('line 10');disp(regionname);
+%disp(shadingcolor);
+plotBlankMap(figc,regionname,0,0,shadingcolor,0);%DEFAULT IS 'GHOST WHITE'
+curpart=1;highqualityfiguresetup;
 
 if size(valuestoplot,1)==1
     valuestoplot=valuestoplot'; %make a column vector
@@ -33,32 +36,33 @@ numcolors=size(colorcutoffs,1);
 
 for valtoexamine=1:numvals
     colortocheck=1;colormatchfound=0;
-    if markersizeasvec==1;thismsize=markersize(valtoexamine);else;thismsize=markersize;end
-    if markertypeasvec==1;thismtype=markertype(valtoexamine);else;thismtype=markertype;end
-    %disp('line 37');disp(thismtype);disp(thismsize);
+    %if markersizeasvec==1;thismsize=markersize(valtoexamine);else;thismsize=markersize;end %%THIS IS THE DEFAULT -- A SINGLE MARKER SIZE
+    %if markertypeasvec==1;thismtype=markertype(valtoexamine);else;thismtype=markertype;end %%THIS IS THE DEFAULT -- A SINGLE MARKER TYPE
     if ~isnan(valuestoplot(valtoexamine))
         while colortocheck<=numcolors
-            %if i==1;disp(colorcutoffs);disp(markercolors);end
             if valuestoplot(valtoexamine)<colorcutoffs(colortocheck) && colormatchfound==0
-                thiscolor=markercolors(colortocheck,:);%if colortocheck~=1;disp(colortocheck);disp(valtoexamine);end
+                thiscolor=markercolors(colortocheck,:);
                 colormatchfound=1;
-                %disp(valtoexamine);disp(thismtype);disp(thiscolor);disp(thismsize);
+                thismsize=markersize(colortocheck); %NON-DEFAULT
+                thismtype=markertype(colortocheck); %NON-DEFAULT
                 h=geoshow(latstouse(valtoexamine),lonstouse(valtoexamine),'DisplayType','Point','Marker',thismtype,...
-                    'MarkerFaceColor',thiscolor,'MarkerEdgeColor',thiscolor,'MarkerSize',thismsize);
+                    'MarkerFaceColor',thiscolor,'MarkerEdgeColor',thiscolor,'MarkerSize',thismsize,'linewidth',2); %DEFAULT LINEWIDTH (IN ALL LOCATIONS) IS 1
                 hold on;
             end        
             colortocheck=colortocheck+1;
         end
         %Value must fall into the top category
         if colormatchfound==0
-            thiscolor=markercolors(end,:);%fprintf('Top category for stn %d\n',valtoexamine);
+            thiscolor=markercolors(end,:);
+            thismsize=markersize(end); %NON-DEFAULT
+            thismtype=markertype(end); %NON-DEFAULT
             h=geoshow(latstouse(valtoexamine),lonstouse(valtoexamine),'DisplayType','Point','Marker',thismtype,...
-                'MarkerFaceColor',thiscolor,'MarkerEdgeColor',thiscolor,'MarkerSize',thismsize);
+                'MarkerFaceColor',thiscolor,'MarkerEdgeColor',thiscolor,'MarkerSize',thismsize,'linewidth',2);
             hold on;
         end
     else
         h=geoshow(-90,-90,'DisplayType','Point','Marker',thismtype,...
-            'MarkerFaceColor','white','MarkerEdgeColor','white','MarkerSize',thismsize);
+            'MarkerFaceColor','white','MarkerEdgeColor','white','MarkerSize',thismsize,'linewidth',2);
     end
     
     a=thiscolor;
@@ -107,7 +111,8 @@ if addcolorbar==1
     end
 end
 
-curpart=2;figloc=savingdir;figname=figurename;highqualityfiguresetup;
-delete mycol.cpt;
+curpart=2;figloc=savingdir;figname=figurename;highqualityfiguresetup; %default is to not have this commented out
+exist mycol.cpt;
+if ans==1;delete mycol.cpt;end
 end
 
