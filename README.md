@@ -8,8 +8,8 @@ To replicate results:
     
 3. Run the four "essential" loops within masterscript.
 
-4. Finally, run makefinalfigures to create any figures that are desired.
+4. Run the script downloadreadandqcdata to reproduce final HadISD station dataset (alternatively, contact me to share the ~2GB file via Globus).
 
-5. To recreate the datasets saved in finalarrays.mat, run the script downloadreadandqcdata.
+5. Finally, run makefinalfigures to create any figures that are desired.
 
-Please contact Colin Raymond (cr2630@columbia.edu) with any questions or to report any bugs.
+Please contact Colin Raymond (cr2630@columbia.edu) to ask any questions, report any bugs, or request the large files containing the final station dataset (~2GB) used in most figures or the radiosonde dataset (4 x 500MB) used in Figures S6-S9.
